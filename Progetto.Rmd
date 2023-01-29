@@ -1,0 +1,548 @@
+---
+title: "Le centrali elettriche nel mondo"
+author: "Daniele Gnudi"
+---
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Carico le librerie
+
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+library("tidyverse")
+library("maps")
+
+Pow_plant <- read.csv("Csv/Global_power_plants.csv")
+Energy <- read.csv("Csv/energy.csv")
+
+```
+
+
+## Introduzione
+
+Il mondo manca di alternative energetiche su larga scala sicure, a basse emissioni di carbonio ed economiche ai combustibili fossili.
+
+Fino a quando non aumenteremo tali alternative, il mondo continuerà ad affrontare due problemi energetici: 
+
+1. Centinaia di milioni di persone non hanno accesso a energia sufficiente; 
+
+2. Il predominio dei combustibili fossili nel nostro sistema energetico guida il cambiamento climatico e altri impatti sulla salute come l'inquinamento atmosferico.
+
+Per garantire che tutti nel mondo abbiano accesso a energia pulita e sicura, dobbiamo comprendere il consumo di energia e il suo impatto nel mondo di oggi e come questo è cambiato nel tempo.
+
+Questo progetto è una semplice panoramica del nostro utilizzo globale di energia rinnovabile visualizzando la diffusione geografica e l'entità del consumo di energia rinnovabile, inclusa l'energia solare, idroelettrica ed eolica.
+
+
+## Conosciamo i dati
+
+[Kaggle dataset](https://www.kaggle.com/datasets/pralabhpoudel/world-energy-consumption?resource=download)
+
+Il dataset contiene la produzione e il consumo di energia provenienti da ogni paese mondiale diversificato in base alla provenienza energetica (rinnovabile e non rinnovabile) e secondo un determinato periodo di tempo.
+Negli studi terrò conto del consumo e produzione energetica che segue l'anno 1970.
+
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+## View(Pow_plant)
+
+# Rinomino e tolgo le colonne inutili
+
+Pow_plant <- Pow_plant %>% 
+  select(country, name.of.powerplant, primary_fuel, secondary.fuel, latitude, longitude) %>% 
+  rename(
+  Country = country,
+  Name = name.of.powerplant,
+  Primary_Fuel = primary_fuel,
+  Secondary_Fuel = secondary.fuel) 
+
+
+# Rinomino due paesi per evitare incongruenze con la mappa sottostante
+
+Pow_plant <- Pow_plant %>%
+  mutate(Country = if_else(Country == "United States of America", "USA", Country)) %>%
+  mutate(Country = if_else(Country == "United Kingdom", "UK", Country))
+
+
+
+## View(Energy)
+
+# Rinomino per evitare conflitti
+
+Energy <- Energy %>%
+  mutate(country = if_else(country == "United States", "USA", country)) %>%
+  mutate(country = if_else(country == "United Kingdom", "UK", country))
+
+```
+
+## Domande guida
+
+* Quanto consuma il mondo?
+* Quali sono le  centrali più diffuse?
+* In che paese si osserva la più alta concentrazione di centrali?
+* I paesi con molte centrali sono anche quelli che consumano di più?
+* Un caso di studio.
+
+
+## Quanto consuma ogni paese pro capite?
+
+Qui si può vedere come rispetto alla media mondiale ci sono paesi come gli USA che consumano tantissimo (Pro capite) e atri come l'africa che consumano relativamente poco.
+
+La Cina dai primi anni successivi al 2000 ha subito un aumento del consumo pro capite, gli USA invece un decremento, mentre tutti gli altri sono rimasti quasi lineari.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Filtro il dataset per partire dal 1970 e per alcuni principali paesi
+
+Energy_cons <- Energy %>%
+  select(country, year, energy_per_capita) %>%
+  rename(kWh_per_capita = energy_per_capita) %>%
+  filter(country %in% c("World", "Europe", "Africa", "China", "USA"), year >= 1970)
+
+
+Energy_cons %>%
+  ggplot(aes(x = year, y = kWh_per_capita, color = country)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Energy use per person", x = "Year", y = "kWh") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+
+Può essere una considerazione ovvia ma procediamo con altre analisi.
+
+## E in totale?
+
+Da questo grafico invece si osserva come il consumo totale degli USA è simile a quello europeo in quanto sul grafico precedente veniva considerato il consumo pro capite.
+
+Negli USA il consumo risultava maggiore avendo circa 335 milioni di abitanti rispetto all'Europa che ne conta circa 746 milioni.
+
+Mentre rimane presente l'aumento di consumo della Cina.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Filtro dataset con colonne per me interessanti
+
+Energy_cons_totale <- Energy %>%
+  select(country, year, primary_energy_consumption) %>%
+    filter(country %in% c("World", "Europe", "Africa", "China", "USA"), year >= 1970)
+
+# Creo il grafico con gli stessi paesi del precedente
+
+Energy_cons_totale %>%
+  ggplot(aes(x = year, y = primary_energy_consumption, color = country)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Primary Energy Consuption", x = "Year", y = "TWh") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+
+## Presenza delle centrali
+
+Abbiamo visto quanto consumano i vari paesi. Ora passiamo dal consumo alla produzione di energia.
+Con questo grafico possiamo osservare la diffusione delle centrali secondo il loro combustibile primario.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Grafico per vedere i tipi di centrale
+
+Combustibile <- Pow_plant %>% count(Primary_Fuel, sort = TRUE) %>% 
+  rename(Number = n,)
+
+Combustibile %>%
+  ggplot( aes(x = reorder(Primary_Fuel, -Number), y = Number, fill = Primary_Fuel)) +
+  geom_bar(stat = "identity", width = 1, show.legend = FALSE) +
+  labs(title = "Power plants in the world", x = "Primary Fuel", y = "Number of PP") +
+  theme_minimal() +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+
+
+## Diffusione delle centrali
+
+Dopo aver visto la presenza di centrali nel mondo ora cerchiamo di capire la diffusione delle principali per ogni paese.
+La mia scelta di studio ricade sulle fonti rinnovabili (solare, idroelettrico ed eolico) e sull'energia nucleare.
+
+L'energia nucleare non emette CO2 e quindi non contribuisce al riscaldamento globale e ai cambiamenti climatici. Nonostante questo però l'energia nucleare non è rinnovabile in quanto utilizza l'uranio che non viene in alcun modo rinnovato in modo naturale.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Creo dataset per ogni combustibile
+
+mappa_solar <- Pow_plant %>% group_by(Country) %>%
+  summarise(Primary_Fuel = sum(Primary_Fuel == "Solar"))
+
+mappa_hydro <- Pow_plant %>% group_by(Country) %>%
+  summarise(Primary_Fuel = sum(Primary_Fuel == "Hydro"))
+
+mappa_wind <- Pow_plant %>% group_by(Country) %>%
+  summarise(Primary_Fuel = sum(Primary_Fuel == "Wind"))
+
+mappa_nuclear <- Pow_plant %>% group_by(Country) %>%
+  summarise(Primary_Fuel = sum(Primary_Fuel == "Nuclear"))
+
+```
+
+
+### Centrali solari
+
+Le centrali solari sono un tipo di centrali elettriche che sfruttano le radiazioni emesse dal sole, in particolare possono o convertire la luce in corrente elettrica (fotovoltaico) oppure utilizzare il calore emesso per scopi termici (solare termico).
+
+Svantaggi:
+
+* Sono legate ad una fonte che è soggetta ad aleatorietà, le condizioni metereologiche, come il cielo coperto e il mal tempo, influiscono sulla disponibilità di raggi solari.
+
+* Le centrali solari necessitano di maggiori superfici rispetto a quelle richieste da altri tipi di centrali a parità di produzione, inoltre, proprio per questo motivo possono avere un impatto negativo sul paesaggio.
+
+Vantaggi:
+
+* La fonte di energia non rischia di esaurirsi nei prossimi decenni.
+
+* Il processo di conversione è relativamente semplice, cosa che rende le centrali di questo tipo molto sicure per gli abitanti delle zone circostanti.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Creo mappa generale del mondo
+
+worldmap <- map_data("world") %>% as_tibble()
+
+## View(worldmap)
+
+
+# Creo mappa per centrali solari
+
+world_solar_tbl <- worldmap %>%
+  left_join(mappa_solar, by = c("region"= "Country")) %>%
+    rename(Solar_Power_Plant = Primary_Fuel)
+
+world_solar_tbl %>% 
+  ggplot(aes(long, lat, map_id = region)) +
+  geom_map(
+    aes(map_id = region),
+    map = worldmap,
+    color = "gray80", fill = "gray30", linewidth = 0.3) +
+  geom_polygon( aes(group = group, fill = Solar_Power_Plant), color = "Black") + 
+  theme_minimal() +
+  scale_fill_gradient(low = "#7C0006", high = "#FFC900") +
+  labs(title = "Solar Power Plant", x = "Latitude", y = "Longitude",  fill = "") +
+  theme(plot.title = element_text(hjust = 0.55))
+  
+```
+
+
+### Centrali idroelettriche
+
+Le centrali idroelettriche sono state le prime tipologie di centrali messe in uso. Il principio di funzionamento di queste si basa sull'utilizzo dell'energia cinetica dell'acqua, al fine di produrre corrente elettrica. 
+
+Svantaggi:
+
+* Soprattutto le centrali a caduta, che richiedono un intervento edilizio di enormi proporzioni per la realizzazione di laghi artificiali, hanno un impatto ambientale di grandi proporzioni, sia nella fase costruttiva delle opere, sia nell'impatto visivo ed estetico.
+
+* Esistono inoltre problemi di sicurezza in caso di forti terremoti o frane che hanno portato, per esempio, al disastro del Vajont nel 1963.
+
+Vantaggi:
+
+* Una volta costruite, offrono energia a costi molto competitivi e non richiedono combustibili o materie prime; sono una fonte di energia totalmente rinnovabile e di fatto illimitata.
+
+* Un ulteriore vantaggio è legato al fatto che la variazione della produzione di energia può avvenire in maniera molto più rapida rispetto ad una centrale termoelettrica o nucleare, variando la quantità di acqua che viene convogliata alla turbina. 
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Creo mappa per centrali idroelettriche
+
+world_hydro_tbl <- worldmap %>%
+  left_join(mappa_hydro, by = c("region"= "Country")) %>%
+  rename(Hydro_Power_Plant = Primary_Fuel)
+
+world_hydro_tbl %>% 
+  ggplot(aes(long, lat, map_id = region)) +
+  geom_map(
+    aes(map_id = region),
+    map = worldmap,
+    color = "gray80", fill = "gray30", linewidth = 0.3) +
+  geom_polygon( aes(group = group, fill = Hydro_Power_Plant), color = "black") + 
+  theme_minimal() +
+  scale_fill_gradient(low = "#001073", high = "#00E4FF") +
+  labs(title = "Hydro Power Plant", x = "Latitude", y = "Longitude", fill = "") +
+  theme(plot.title = element_text(hjust = 0.55))
+  
+```
+
+Come possiamo osservare il paese con il maggior numero di centrali idroelettriche sono gli USA seguiti dalla Cina.
+
+### Centrali nucleari
+
+Le centrali nucleari sfruttano il processo della fissione nucleare: attraverso la collisione con un neutrone si induce la rottura di un nucleo atomico di elemento pensante (uranio 235, plutonio, torio), si ha l’emissione di energia che consente la propagazione a catena della reazione, si genera così una quantità costante di energia.
+
+Vantaggi:
+
+* Produce un elevatissima potenza per metro quadrato occupato dall'impianto, se si esclude il costo di smaltimento scorie, rappresentando una valida soluzione alla dipendenza dai combustibili fossili.
+
+Svantaggi:
+
+* Le rigide norme di sicurezza rendono la costruzione di queste centrali costosa e lenta, anche per la variabilità nel tempo delle stesse norme.
+
+* Lo smaltimento delle scorie radioattive e lo smantellamento della centrale stessa al termine del suo ciclo vitale (circa 40-60 anni) è un problema che non ha ancora trovato una soluzione univoca.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Creo mappa per centrali nucleari
+
+world_nuclear_tbl <- worldmap %>%
+  left_join(mappa_nuclear, by = c("region"= "Country")) %>%
+    rename(Nuclear_Power_Plant = Primary_Fuel)
+
+world_nuclear_tbl %>% 
+  ggplot(aes(long, lat, map_id = region)) +
+  geom_map(
+    aes(map_id = region),
+    map = world_nuclear_tbl,
+    color = "gray80", fill = "gray30", linewidth = 0.3) +
+  geom_polygon( aes(group = group, fill = Nuclear_Power_Plant), color = "black") + 
+  theme_minimal() +
+  scale_fill_gradient(low = "#074400", high = "#1BFF00") +
+  labs(title = "Nuclear Power Plant", x = "Latitude", y = "Longitude",  fill = "") +
+  theme(plot.title = element_text(hjust = 0.55))
+  
+```
+
+
+### Centrali eoliche
+
+Le centrali eoliche, o meglio parchi eolici, sono formate da un insieme di aerogeneratori che sfruttano l’energia cinetica del vento convertendola in energia elettrica. 
+
+Svantaggi:
+
+* I parchi eolici, trovandosi vicino a centri abitati, possono essere fonti di inquinamento acustico dato dal funzionamento degli aerogeneratori, inoltre questi ultimi, analogamente alle centrali solari, possono avere un impatto negativo sul paesaggio.
+
+* Pur essendo un tipo di centrali molto produttive la loro efficacia è strettamente legata alla disponibilità della materia prima, devono necessariamente trovarsi in zone molto ventose.
+
+Vantaggi:
+
+* I parchi eolici hanno un ridotto impatto ambientale, infatti, l’energia consumata per la loro produzione viene velocemente recuperata in poco tempo, inoltre pur necessitando di manutenzione, sono molto duraturi, rimangono  operativi per circa 25 anni senza la necessità di grandi interventi.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Creo mappa per centrali eoliche
+
+world_wind_tbl <- worldmap %>%
+  left_join(mappa_wind, by = c("region"= "Country")) %>%
+    rename(Wind_Power_Plant = Primary_Fuel)
+
+world_wind_tbl %>% 
+  ggplot(aes(long, lat, map_id = region)) +
+  geom_map(
+    aes(map_id = region),
+    map = world_wind_tbl,
+    color = "gray80", fill = "gray30", linewidth = 0.3) +
+  geom_polygon( aes(group = group, fill = Wind_Power_Plant), color = "black") + 
+  theme_minimal() +
+  scale_fill_gradient(low = "#004bff", high = "#A7D8DE") +
+  labs(title = "Wind Power Plant", x = "Latitude", y = "Longitude",  fill = "") +
+  theme(plot.title = element_text(hjust = 0.55))
+  
+```
+
+## Quale paese ha il maggior numero di centrali?
+
+Come abbiamo visto nelle cartine diversificando per tipologia di centrale ora qui vediamo la presenza di centrali per paese senza fare distinzione riguardo la tipologia. 
+Gli USA si confermano il paese con la presenza maggiore, con quasi 10 mila centrali, seguito dalla Cina che ne possiede però meno della metà.
+Per l'Europa sono presenti il Regno Unito, la Francia e la Germania.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+maggiori_centrali <- Pow_plant %>% 
+    select(Country) %>%
+  add_count(Country) %>%
+  filter(n > 1000)
+
+maggiori_centrali %>%
+  ggplot() +
+  geom_bar( aes(x = reorder(Country, -n), fill = Country), width = 1, show.legend = FALSE) +
+  labs(title = "Power plants in the world", x = "Country", y = "Number of PP") +
+  theme_minimal() +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  theme(plot.title = element_text(hjust = 0.4)) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+
+## Il paese che ha più centrali è anche quello che consuma di più?
+
+Dopo aver visto la presenza di centrali ho cercato di capire se il paese con il maggior numero di centrali fosse anche quello con il maggior consumo di energia.
+
+In parte è confermato vedendo la presenza, a parti invertite, di USA e Cina nelle prime due posizioni.
+
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Filtro per colonne che mi interessano e i primi 10 in ordine decrescente 
+
+Classifica_consumo <- Energy %>%
+  select(country, primary_energy_consumption, year) %>%
+  filter(country %in% c("China", "USA", "India", "Russia", "Africa", "Japan", "Canada", "Germany"), year == 2021)
+
+# Controllo se ci sono valori Na
+# Classifica_consumo %>% summarise_all(~ sum(is.na(.)))
+
+Classifica_consumo_Na <- subset(Classifica_consumo, is.na(Classifica_consumo$primary_energy_consumption))
+
+# Sono righe di scarto perchè altre sono già presenti nel dataset
+# Elimino le righe con Na
+
+Classifica_consumo <- Classifica_consumo %>% drop_na()
+
+# Creo il grafico in ordine decrescente per paragone a quello precedente
+
+Classifica_consumo %>%
+  ggplot( aes(x = reorder(country, -primary_energy_consumption), y = primary_energy_consumption, fill = country)) +
+  geom_bar(stat = "identity", width = 1, show.legend = FALSE) +
+  labs(title = "Consumption Ranking", x = "Country", y = "TWh") +
+  theme_minimal() +
+  scale_x_discrete(guide = guide_axis(angle = 45)) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+
+
+
+
+## Un caso di studio: Il confronto tra Italia e Stati Uniti
+
+Prendendo in considerazione gli USA, secondo paese per consumo di energia e primo per presenza di centrali, e l'Italia, non presente nelle classifiche ma comunque a mio parere interessante per capire la nostra situazione, ho svolto una comparazione tra produzione di energia da fonti rinnovabili e consumo totale.
+
+### Produzione e consumo di Energia in Italia
+
+Partiamo dalla produzione di energia da fonti rinnovabili in Italia.
+
+L'energia idroelettrica dal 1970 è sempre stata la più produttiva, anche grazie ai numerosi corsi d'acqua e invasi artificiali e naturali che ci sono nel nostro territorio, tra i 30 e i 60 TWh.
+
+L'energia nucleare a causa del referendum abrogativo del 1987 (dopo l'incidente di Chernobyl del 1986) che non aveva come conseguenza l’abbandono del nucleare in Italia ma uno dei 5 quesiti riguardava l’abrogazione dei contributi agli enti locali che ospitassero sul proprio territorio centrali nucleari o a carbone.
+Questo non favorì più lo sviluppo di centrali nucleari sul territorio.
+
+L'energia solare invece ha avuto un improvviso incremento a partire dal 2010 a causa del decreto "Conto Energia".
+Il decreto consisteva in un credito in euro, denominato contributo in conto scambio, che andava a compensare e rimborsare la tariffa spesa dall'utente per l'energia che invece è stata prelevata dalla rete e pagata in bolletta.
+È terminato nel 2013 dove sono seguiti poi degli incentivi riguardanti l'installazione e non la produzione.
+
+L'energia eolica ha avuto un incremento a partire dal 2000 anche se la causa del suo scarso utilizzo nel nostro paese è principalmente geografico. 
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Metto in ordine i dati
+
+Energy_ita <- Energy %>%
+  filter(country == "Italy", year >= 1970) %>%
+  select(year, solar_electricity, hydro_electricity, nuclear_electricity, wind_electricity) %>%
+    rename(
+    Solar = solar_electricity,
+    Hydro = hydro_electricity,
+    Nuclear = nuclear_electricity,
+    Wind = wind_electricity) %>%
+  gather("Hydro", "Solar", "Nuclear", "Wind", key = "Type_of_Electricity", value = "TWh")
+
+# Costruisco il grafico per la produzione
+
+Energy_ita %>%
+  ggplot() +
+  geom_line(aes(y = TWh, x = year, color = Type_of_Electricity)) +
+  labs(title = "Italy Energy Production", x = "Year", y = "Electricity in TWh", 
+       color = "Type") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.6)) +
+  scale_color_manual(values=c("#001073", "#1BFF00", "#7C0006", "#A7D8DE"))
+```
+
+Il consumo di energia in Italia è aumentato fino al 2005 e da qui ha subito un moderato decremento, del quale non ho trovato un particolare riscontro nelle ricerche effettuate.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+# Costruisco il grafico per il conusmo
+
+Energy_ita_cons <- Energy %>%
+  filter(country == "Italy", year >= 1970) %>%
+  select(year, primary_energy_consumption)
+  
+Energy_ita_cons %>%
+  ggplot() +
+  geom_line(aes(y = primary_energy_consumption, x = year)) +
+  labs(title = "Italy Energy Consumption", x = "Year", y = "Electricity in TWh", 
+       color = "Type") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+
+
+### Produzione e consumo di Energia negli USA
+
+Al contrario dell'Italia negli USA è molto presente l'energia nucleare che infatti è quella più produttiva avendo un incremento dal 1970 causato probabilmente dalle nuove tecnologie.
+Gli USA puntano molto su questa risorsa infatti lo scorso dicembre il dipartimento statunitense dell’Energia ha annunciato  che gli scienziati sono stati in grado, per la prima volta nella storia, di produrre una reazione di fusione nucleare che genera più energia di quella necessaria per innescarla.
+
+L'energia idroelettrica è stata sempre quasi costante tra i 200 e i 400 TWh.
+
+Per quanto riguarda l'energia solare il forte calo dei costi (-85% negli ultimi dieci anni) ha reso evidente l’opportunità di questa risorsa.
+Accanto a questo è stato e sarà importante la "Comunità energetica" che sono azioni collettive che coinvolgono la partecipazione dei cittadini al sistema energetico (come legislazione favorevole eccetera).
+
+L'eolico invece ha visto un aumento grazie ad una nuova tecnologia.
+La capacità di produrre energia delle nuove turbine è del 40%: il merito è soprattutto delle pale più lunghe, che generano maggiore energia. Queste si possono installare anche in zone meno ventose grazie alle nuove torri, che consentono di intercettare le correnti più forti ad altitudini elevate.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+
+# Metto in ordine i dati
+
+Energy_USA <- Energy %>%
+  filter(country == "USA", year >= 1970) %>%
+  select(year, solar_electricity, hydro_electricity, nuclear_electricity, wind_electricity) %>%
+    rename(
+    Solar = solar_electricity,
+    Hydro = hydro_electricity,
+    Nuclear = nuclear_electricity,
+    Wind = wind_electricity) %>%
+  gather("Hydro", "Solar", "Nuclear", "Wind", key = "Type_of_Electricity", value = "TWh")
+
+
+# Costruisco il grafico per la produzione
+
+Energy_USA %>%
+  ggplot() +
+  geom_line(aes(y = TWh, x = year, color = Type_of_Electricity)) +
+  labs(title = "USA Energy Production", x = "Year", y = "Electricity in TWh", 
+       color = "Type") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.6)) +
+  scale_color_manual(values=c("#001073", "#1BFF00", "#7C0006", "#A7D8DE"))
+```
+
+Il consumo negli USA ha visto un aumento dal 1970 fino al 2000 seguito poi da una lieve stabilizzazione.
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+# Costruisco il grafico per il conusmo
+
+Energy_USA_cons <- Energy %>%
+  filter(country == "USA", year >= 1970) %>%
+  select(year, primary_energy_consumption)
+  
+Energy_USA_cons %>%
+  ggplot() +
+  geom_line(aes(y = primary_energy_consumption, x = year)) +
+  labs(title = "USA Energy Consumption", x = "Year", y = "Electricity in TWh", 
+       color = "Type") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels = scales::comma)
+
+```
+
+## Conclusioni
+
+Per concludere, le fonti rinnovabili rappresentano un'alternativa importante alle fonti non rinnovabili, ma ancora non sono sufficienti per soddisfare il consumo globale. Tuttavia, continuare a investire e sviluppare queste fonti è cruciale per un futuro sostenibile. È importante che governi, industrie e società lavorino insieme per promuovere l'adozione delle fonti rinnovabili e ridurre la dipendenza dalle fonti non rinnovabili.
+
+
+
