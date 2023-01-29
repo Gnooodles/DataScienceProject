@@ -21,7 +21,7 @@ Energy <- read.csv("Csv/energy.csv")
 
 ## Introduzione
 
-Il mondo manca di alternative energetiche su larga scala sicure, a basse emissioni di carbonio ed economiche ai combustibili fossili.
+Il mondo manca di alternative energetiche ai combustibili fossili su larga scala sicure, a basse emissioni di carbonio ed economiche.
 
 Fino a quando non aumenteremo tali alternative, il mondo continuerà ad affrontare due problemi energetici: 
 
@@ -86,7 +86,7 @@ Energy <- Energy %>%
 
 ## Quanto consuma ogni paese pro capite?
 
-Qui si può vedere come rispetto alla media mondiale ci sono paesi come gli USA che consumano tantissimo (Pro capite) e atri come l'africa che consumano relativamente poco.
+Qui si può vedere come rispetto alla media mondiale ci sono paesi come gli USA che consumano tantissimo (Pro capite) e altri come l'Africa che consumano relativamente poco.
 
 La Cina dai primi anni successivi al 2000 ha subito un aumento del consumo pro capite, gli USA invece un decremento, mentre tutti gli altri sono rimasti quasi lineari.
 
@@ -114,7 +114,7 @@ Può essere una considerazione ovvia ma procediamo con altre analisi.
 
 ## E in totale?
 
-Da questo grafico invece si osserva come il consumo totale degli USA è simile a quello europeo in quanto sul grafico precedente veniva considerato il consumo pro capite.
+Da questo grafico invece si osserva come il consumo totale degli USA sia simile a quello europeo in quanto sul grafico precedente veniva considerato il consumo pro capite.
 
 Negli USA il consumo risultava maggiore avendo circa 335 milioni di abitanti rispetto all'Europa che ne conta circa 746 milioni.
 
@@ -169,7 +169,7 @@ Combustibile %>%
 Dopo aver visto la presenza di centrali nel mondo ora cerchiamo di capire la diffusione delle principali per ogni paese.
 La mia scelta di studio ricade sulle fonti rinnovabili (solare, idroelettrico ed eolico) e sull'energia nucleare.
 
-L'energia nucleare non emette CO2 e quindi non contribuisce al riscaldamento globale e ai cambiamenti climatici. Nonostante questo però l'energia nucleare non è rinnovabile in quanto utilizza l'uranio che non viene in alcun modo rinnovato in modo naturale.
+L'energia nucleare non emette CO2 e quindi non contribuisce al riscaldamento globale e ai cambiamenti climatici. Nonostante ciò però l'energia nucleare non è rinnovabile in quanto utilizza l'uranio che non viene in alcun modo rinnovato in modo naturale.
 
 ```{r, echo=FALSE, results='hide', message=FALSE}
 
@@ -424,8 +424,7 @@ Partiamo dalla produzione di energia da fonti rinnovabili in Italia.
 
 L'energia idroelettrica dal 1970 è sempre stata la più produttiva, anche grazie ai numerosi corsi d'acqua e invasi artificiali e naturali che ci sono nel nostro territorio, tra i 30 e i 60 TWh.
 
-L'energia nucleare a causa del referendum abrogativo del 1987 (dopo l'incidente di Chernobyl del 1986) che non aveva come conseguenza l’abbandono del nucleare in Italia ma uno dei 5 quesiti riguardava l’abrogazione dei contributi agli enti locali che ospitassero sul proprio territorio centrali nucleari o a carbone.
-Questo non favorì più lo sviluppo di centrali nucleari sul territorio.
+L’energia nucleare in Italia venne limitata causa del referendum abrogativo del 1987, dopo l’incidente di Chernobyl del 1986. Non veniva sancito direttamente l’abbandono del nucleare, ma in uno dei 5 quesiti affrontati era prevista l’abrogazione dei contributi agli enti locali che ospitassero sul proprio territorio centrali nucleari o a carbone. Questo non favorì più lo sviluppo di centrali nucleari sul territorio.
 
 L'energia solare invece ha avuto un improvviso incremento a partire dal 2010 a causa del decreto "Conto Energia".
 Il decreto consisteva in un credito in euro, denominato contributo in conto scambio, che andava a compensare e rimborsare la tariffa spesa dall'utente per l'energia che invece è stata prelevata dalla rete e pagata in bolletta.
